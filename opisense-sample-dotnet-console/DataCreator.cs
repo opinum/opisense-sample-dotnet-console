@@ -138,7 +138,7 @@ namespace opisense_sample_dotnet_console
 
             for (var date = from; date < today; date = date + period)
             {
-                result.Add(new Data { Date = date, Value = rand.NextDouble() * maxValue });
+                result.Add(new Data { Date = DateTime.SpecifyKind(date, DateTimeKind.Utc), Value = rand.NextDouble() * maxValue });
             }
 
             return holesEveryXDatapoint == null
