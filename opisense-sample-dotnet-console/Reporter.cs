@@ -1,5 +1,6 @@
 using System;
 using System.Configuration;
+using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -39,10 +40,18 @@ namespace opisense_sample_dotnet_console
                 Console.WriteLine("Select how to get the data: ");
                 var display = Convert.ToInt32(Console.ReadLine());
 
+                Stopwatch sw = new Stopwatch();
+                sw.Start();
                 var data = await GetData(client, variable, display == 1 ? 0 : 2, variableType.Aggregate);
+                var getDataElapsedTime = sw.Elapsed;
+                sw.Restart();
                 ConsoleTable
-                    .From(data.Select(x => new {x.VariableId, Value = x.GetValue(), x.Date}))
+                    .From(data.Select(x => new { x.VariableId, Value = x.GetValue(), x.Date }))
                     .Write();
+                var displayDataElapsedTime = sw.Elapsed;
+                sw.Stop();
+                Console.WriteLine($"Data retrieval took {getDataElapsedTime:g}");
+                Console.WriteLine($"Data display took {displayDataElapsedTime:g}");
             }
         }
 
