@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using opisense_sample_dotnet_console.Model;
 
 namespace opisense_sample_dotnet_console
 {
@@ -14,6 +16,7 @@ namespace opisense_sample_dotnet_console
             var reporter = new Reporter(variableSelector, authenticator);
             var siteDeletor = new SiteDeletor(siteSelector, authenticator);
             var sourceDeletor = new SourceDeletor(sourceSelector, authenticator);
+            var importer = new Importer(authenticator);
             int userInput;
             do
             {
@@ -40,6 +43,9 @@ namespace opisense_sample_dotnet_console
                         case 6:
                             sourceDeletor.DeleteSource().Wait();
                             break;
+                        case 7:
+                            importer.ImportDefinitions().Wait();
+                            break;
                     }
                 }
                 catch (Exception exc)
@@ -49,7 +55,7 @@ namespace opisense_sample_dotnet_console
                     Console.WriteLine("Something bad happened. Please try again...");
                 }
 
-            } while (userInput != 7);
+            } while (userInput != 8);
         }
 
         private static int DisplayMenu()
@@ -65,12 +71,15 @@ namespace opisense_sample_dotnet_console
             Console.WriteLine("4. View Data");
             Console.WriteLine("5. Delete a site (WARNING: UNRECOVERABLE)");
             Console.WriteLine("6. Delete a source (WARNING: UNRECOVERABLE)");
+            Console.WriteLine("7. Import sites and sources (using JSON File)");
 
             Console.WriteLine();
             Console.WriteLine("-------------------------");
-            Console.WriteLine("7. Exit");
+            Console.WriteLine("8. Exit");
             var result = Console.ReadLine();
             return Convert.ToInt32(result);
         }
     }
+
+  
 }

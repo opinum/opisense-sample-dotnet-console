@@ -27,7 +27,7 @@ namespace opisense_sample_dotnet_console
             using (var client = await authenticator.GetAuthenticatedClient())
             {
                 Console.WriteLine("Creating 3 sites in Opisense");
-                
+
 
                 Console.WriteLine("Creating site1");
                 var siteId1 = await CreateSite(client, "site1");
@@ -35,7 +35,7 @@ namespace opisense_sample_dotnet_console
                 var siteId2 = await CreateSite(client, "site2");
                 Console.WriteLine("Creating site3");
                 var siteId3 = await CreateSite(client, "site3");
-                
+
                 Console.WriteLine("Creating source1 and variables");
                 var source1 = await CreateSource(client, siteId1, "source1");
                 // Add 
@@ -159,7 +159,7 @@ namespace opisense_sample_dotnet_console
 
         private static async Task<Variable> CreateVariable(HttpClient client, int sourceId, int variableTypeId)
         {
-            var response = await client.PostAsJsonAsync($"{OpisenseApi}variables/source/{sourceId}", new Variable
+            return await CreateVariable(client, sourceId, new Variable
             {
                 VariableTypeId = variableTypeId,
                 UnitId = 8,
@@ -167,13 +167,18 @@ namespace opisense_sample_dotnet_console
                 Granularity = 10,
                 GranularityTimeBase = TimePeriod.Minute
             });
+        }
+
+        internal static async Task<Variable> CreateVariable(HttpClient client, int sourceId, object variable)
+        {
+            var response = await client.PostAsJsonAsync($"{OpisenseApi}variables/source/{sourceId}", variable);
             response.EnsureSuccessStatusCode();
             return await response.Content.ReadAsAsync<Variable>();
         }
 
         private static async Task<Source> CreateSource(HttpClient client, int siteId, string sourceName)
         {
-            var response = await client.PostAsJsonAsync($"{OpisenseApi}sources", new
+            return await CreateSource(client, new
             {
                 Name = sourceName,
                 SiteId = siteId,
@@ -181,6 +186,11 @@ namespace opisense_sample_dotnet_console
                 SourceTypeId = 72,
                 EnergyTypeId = 1
             });
+        }
+
+        internal static async Task<Source> CreateSource(HttpClient client, object source)
+        {
+            var response = await client.PostAsJsonAsync($"{OpisenseApi}sources", source);
             response.EnsureSuccessStatusCode();
             return await response.Content.ReadAsAsync<Source>();
         }
@@ -189,7 +199,12 @@ namespace opisense_sample_dotnet_console
         {
             //TypeID can be retrieved from GET /sitetypes
             //TimeZoneId can be retrieved from GET /timezones
-            var response = await client.PostAsJsonAsync($"{OpisenseApi}sites", new { Name = siteName, TypeId = 1, TimeZoneId = DefaultTimezone, City = "Mont-Saint-Guibert", Country = "Belgium", Street = "Rue Emile Francqui, 6", PostalCode = "1435" });
+            return await CreateSite(client, new { Name = siteName, TypeId = 1, TimeZoneId = DefaultTimezone, City = "Mont-Saint-Guibert", Country = "Belgium", Street = "Rue Emile Francqui, 6", PostalCode = "1435" });
+        }
+
+        internal static async Task<int> CreateSite(HttpClient client, object site)
+        {
+            var response = await client.PostAsJsonAsync($"{OpisenseApi}sites", site);
             response.EnsureSuccessStatusCode();
             return await response.Content.ReadAsAsync<int>();
         }
