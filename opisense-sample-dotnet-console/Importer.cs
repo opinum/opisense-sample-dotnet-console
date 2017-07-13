@@ -128,7 +128,7 @@ namespace opisense_sample_dotnet_console
         public string TimeZoneId { get; set; }
         public dynamic ClientData { get; set; }
 
-        public List<ImportSource> Sources { get; set; }
+        public List<ImportSource> Sources { get; set; } = new List<ImportSource>();
     }
 
     public class ImportSource
@@ -146,7 +146,7 @@ namespace opisense_sample_dotnet_console
         public string SerialNumber { get; set; }
         public int? DisplayVariableTypeId { get; set; }
         public string MeterAddress { get; set; }
-        public List<VariableImport> Variables { get; set; }
+        public List<VariableImport> Variables { get; set; } = new List<VariableImport>();
     }
 
     public class VariableImport
