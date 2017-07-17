@@ -77,7 +77,7 @@ namespace opisense_sample_dotnet_console
                 var siteId3 = await CreateSite(client, "site3");
 
                 Console.WriteLine("Creating source1 and variables");
-                var source1 = await CreateSource(client, 1056, "source1");
+                var source1 = await CreateSource(client, siteId1, "source1");
                 // Add 
                 var source1Variable1 = await CreateVariable(client, source1.Id, 0);
                 // Ajout de la variable d'index
