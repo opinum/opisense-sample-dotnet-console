@@ -4,6 +4,7 @@ using System.Configuration;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
+using System.Web;
 using opisense_sample_dotnet_console.Model;
 
 namespace opisense_sample_dotnet_console
@@ -26,9 +27,48 @@ namespace opisense_sample_dotnet_console
         {
             using (var client = await authenticator.GetAuthenticatedClient())
             {
+                var form = new Form
+                {
+                    Name = "SOURCE_FORM",
+                    EntityType = "source",
+                    Groups = new List<Group>
+                    {
+                        new Group
+                        {
+                            Name = "Group1",
+                            Fields = new List<Field>
+                            {
+                                new Field{Name = "STRING_FIELD", Type = FieldType.String},
+                                new Field{Name = "DOUBLE_FIELD", Type = FieldType.Double},
+                            }
+                        },
+                        new Group
+                        {
+                            Name = "Group2",
+                            Fields = new List<Field>
+                            {
+                                new Field{Name = "INT_LIST_FIELD", Type = FieldType.Int, IsList = true, Items = new List<ListItem>
+                                {
+                                    new ListItem{Name = "One", Value = 1},
+                                    new ListItem{Name = "Two", Value = 2}
+
+                                }},
+                                new Field{Name = "DATE_FIELD", Type = FieldType.Date},
+                            }
+                        }
+
+                    }
+                };
+                Console.WriteLine("Checking if source form exists");
+                if (await GetSourceForm(client, form.Name) == null)
+                {
+                    Console.WriteLine("Creating source form");
+                    await CreateSourceForm(client, form);
+                }
+
+
+
                 Console.WriteLine("Creating 3 sites in Opisense");
-
-
                 Console.WriteLine("Creating site1");
                 var siteId1 = await CreateSite(client, "site1");
                 Console.WriteLine("Creating site2");
@@ -37,7 +77,7 @@ namespace opisense_sample_dotnet_console
                 var siteId3 = await CreateSite(client, "site3");
 
                 Console.WriteLine("Creating source1 and variables");
-                var source1 = await CreateSource(client, siteId1, "source1");
+                var source1 = await CreateSource(client, 1056, "source1");
                 // Add 
                 var source1Variable1 = await CreateVariable(client, source1.Id, 0);
                 // Ajout de la variable d'index
@@ -72,7 +112,7 @@ namespace opisense_sample_dotnet_console
                 var source5Variable2 = await CreateVariable(client, source5.Id, 25);
 
 
-                //    Ajouter dans chaque source précédemment créé 2 variables(type double et type int) avec 2 ans d'historique des valeurs au points de 10mins (=6*24*365*2 points), sauf pour le site3 ou il faut avoir un "trou" pour tous les 10 valeurs
+                //    Ajouter dans chaque source précédemment créé 2 variables(type double et type int) avec 1 ans d'historique des valeurs au points de 10mins (=6*24*365*2 points), sauf pour le site3 ou il faut avoir un "trou" pour tous les 10 valeurs
 
                 Console.WriteLine("Adding data in source 1");
                 await CreateData(client, source1Variable1, source1Variable2);
@@ -88,10 +128,20 @@ namespace opisense_sample_dotnet_console
 
                 // ATTENTION: LORS DE L'INGESTION, LES DONNEES PASSENT PAS PLUSIEURS ETAPES (ENRICHISSEMENT, VARIABLE CALCULEES, ALERTES)
                 // IL Y A DONC UN DELAIS POUVANT ALLER JUSQU'A 10 MINUTES AVANT QU'ELLES SOIENT ACCESSIBLE VIA L'API
-
-                //    Pour le site1 source1 dupliquer tous les valeurs de variable1 en variable3
-                //    Supprimer le site2
             }
+        }
+
+        private async Task CreateSourceForm(HttpClient client, Form form)
+        {
+            var response = await client.PostAsJsonAsync($"{OpisenseApi}form", form);
+            response.EnsureSuccessStatusCode();
+        }
+
+        private async Task<object> GetSourceForm(HttpClient client, string name)
+        {
+            var response = await client.GetAsync($"{OpisenseApi}form?name={HttpUtility.UrlEncode(name)}");
+            response.EnsureSuccessStatusCode();
+            return (await response.Content.ReadAsAsync<List<Form>>()).FirstOrDefault();
         }
 
         public async Task UpdateData()
@@ -184,7 +234,16 @@ namespace opisense_sample_dotnet_console
                 SiteId = siteId,
                 TimeZoneId = DefaultTimezone,
                 SourceTypeId = 72,
-                EnergyTypeId = 1
+                EnergyTypeId = 1,
+                ClientData = new
+                {
+                    SOURCE_FORM = new
+                    {
+                        Group1 = new { STRING_FIELD = sourceName },
+                        Group2 = new { INT_LIST_FIELD = 2, DATE_FIELD = DateTime.UtcNow }
+                    }
+
+                }
             });
         }
 
@@ -208,5 +267,39 @@ namespace opisense_sample_dotnet_console
             response.EnsureSuccessStatusCode();
             return await response.Content.ReadAsAsync<int>();
         }
+    }
+
+    internal class Form
+    {
+        public string Name { get; set; }
+        public string EntityType { get; set; } = "site";
+        public List<Group> Groups { get; set; }
+    }
+
+    internal class Group
+    {
+        public string Name { get; set; }
+        public List<Field> Fields { get; set; }
+    }
+
+    internal class Field
+    {
+        public string Name { get; set; }
+        public FieldType Type { get; set; }
+        public bool IsList { get; set; }
+        public List<ListItem> Items { get; set; }
+    }
+    public enum FieldType
+    {
+        String = 0,
+        Int = 1,
+        Double = 2,
+        Date = 5,
+    }
+
+    internal class ListItem
+    {
+        public string Name { get; set; }
+        public object Value { get; set; }
     }
 }
