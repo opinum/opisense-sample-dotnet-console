@@ -112,7 +112,7 @@ namespace opisense_sample_dotnet_console
                 var source5Variable2 = await CreateVariable(client, source5.Id, 25);
 
 
-                //    Ajouter dans chaque source précédemment créé 2 variables(type double et type int) avec 1 ans d'historique des valeurs au points de 10mins (=6*24*365*2 points), sauf pour le site3 ou il faut avoir un "trou" pour tous les 10 valeurs
+                //    Ajouter dans chaque source prÃ©cÃ©demment crÃ©Ã© 2 variables(type double et type int) avec 1 ans d'historique des valeurs au points de 10mins (=6*24*365*2 points), sauf pour le site3 ou il faut avoir un "trou" pour tous les 10 valeurs
 
                 Console.WriteLine("Adding data in source 1");
                 await CreateData(client, source1Variable1, source1Variable2);
@@ -146,7 +146,7 @@ namespace opisense_sample_dotnet_console
 
         public async Task UpdateData()
         {
-            //Pour le site1 source1 variable1 mettre à jour un an des valeurs
+            //Pour le site1 source1 variable1 mettre Ã  jour un an des valeurs
             //    Pour le site1 source1 dupliquer tous les valeurs de variable1 en variable3
             using (var client = await authenticator.GetAuthenticatedClient())
             {

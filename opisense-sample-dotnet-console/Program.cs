@@ -17,7 +17,9 @@ namespace opisense_sample_dotnet_console
             var siteDeletor = new SiteDeletor(siteSelector, authenticator);
             var sourceDeletor = new SourceDeletor(sourceSelector, authenticator);
             var importer = new Importer(authenticator);
-            var exitCode = 99;
+            var cleanUpper = new CleanUpper(authenticator);
+
+            var exitCode = 0;
             int userInput;
             do
             {
@@ -50,6 +52,9 @@ namespace opisense_sample_dotnet_console
                         case 8:
                             sourceSelector.SearchSources().Wait();
                             break;
+                        case 9:
+                            cleanUpper.CleanupTestSitesAndData().Wait();
+                            break;
                     }
                 }
                 catch (Exception exc)
@@ -77,6 +82,7 @@ namespace opisense_sample_dotnet_console
             Console.WriteLine("6. Delete a source (WARNING: UNRECOVERABLE)");
             Console.WriteLine("7. Import sites and sources (using JSON File)");
             Console.WriteLine("8. Search sources (using Custom filter)");
+            Console.WriteLine("9. Cleanup all test sites and data (WARNING: UNRECOVERABLE)");
 
             Console.WriteLine();
             Console.WriteLine("-------------------------");
