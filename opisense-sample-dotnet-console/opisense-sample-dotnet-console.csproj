@@ -66,6 +66,7 @@
     <Compile Include="Reporter.cs" />
     <Compile Include="SiteDeletor.cs" />
     <Compile Include="SiteSelector.cs" />
+    <Compile Include="CleanUpper.cs" />
     <Compile Include="SourceDeletor.cs" />
     <Compile Include="SourceSelector.cs" />
     <Compile Include="Tools\ConsoleTable.cs" />
