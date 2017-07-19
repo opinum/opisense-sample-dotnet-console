@@ -2,6 +2,7 @@ using System;
 using System.Configuration;
 using System.Net.Http;
 using System.Threading.Tasks;
+using System.Web;
 using ConsoleTables;
 using opisense_sample_dotnet_console.Model;
 
@@ -29,6 +30,22 @@ namespace opisense_sample_dotnet_console
                 }
             }
             return await InternalDisplaySource(client, fromSite);
+        }
+
+        public async Task SearchSources()
+        {
+            using (var client = await authenticator.GetAuthenticatedClient())
+            {
+                Console.WriteLine("Enter the your custom filter (i.e. Name = 'source1' OR SOURCE_FORM.Group1.'STRING_FIELD' = 'source2'): ");
+                var filter = Console.ReadLine();
+                var response = await client.GetAsync($"{OpisenseApi}sources?displayLevel=verbose&customFilter={HttpUtility.UrlEncode(filter)}");
+                response.EnsureSuccessStatusCode();
+                var sources = await response.Content.ReadAsAsync<Source[]>();
+
+                ConsoleTable
+                    .From(sources)
+                    .Write();
+            }
         }
 
         private static async Task<Source[]> GetSources(HttpClient client, int? siteId)

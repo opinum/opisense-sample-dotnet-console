@@ -44,6 +44,7 @@
     <Reference Include="System.Net.Http.Formatting, Version=5.2.3.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.AspNet.WebApi.Client.5.2.3\lib\net45\System.Net.Http.Formatting.dll</HintPath>
     </Reference>
+    <Reference Include="System.Web" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -54,6 +55,7 @@
   <ItemGroup>
     <Compile Include="Authenticator.cs" />
     <Compile Include="DataCreator.cs" />
+    <Compile Include="Importer.cs" />
     <Compile Include="Model\Data.cs" />
     <Compile Include="Model\Site.cs" />
     <Compile Include="Model\Source.cs" />
