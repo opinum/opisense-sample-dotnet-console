@@ -3,8 +3,11 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.Linq;
 using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
 using System.Web;
+using Marvin.JsonPatch.Dynamic;
+using Newtonsoft.Json;
 using opisense_sample_dotnet_console.Model;
 
 namespace opisense_sample_dotnet_console
@@ -267,6 +270,23 @@ namespace opisense_sample_dotnet_console
             response.EnsureSuccessStatusCode();
             return await response.Content.ReadAsAsync<int>();
         }
+
+        public static async Task PatchSite(HttpClient client, int siteId, JsonPatchDocument sitePatch)
+        {
+            var response = await client.PatchAsync($"{OpisenseApi}sites/{siteId}", sitePatch);
+            response.EnsureSuccessStatusCode();
+        }
+
+        public static async Task PatchSource(HttpClient client, int sourceId, JsonPatchDocument sourcePatch)
+        {
+            var response = await client.PatchAsync($"{OpisenseApi}sources/{sourceId}", sourcePatch);
+            response.EnsureSuccessStatusCode();
+        }
+        public static async Task PatchVariable(HttpClient client, int sourceId,int variableId, JsonPatchDocument variablePatch)
+        {
+            var response = await client.PatchAsync($"{OpisenseApi}sources/{sourceId}/variables/{variableId}", variablePatch);
+            response.EnsureSuccessStatusCode();
+        }
     }
 
     internal class Form
@@ -301,5 +321,16 @@ namespace opisense_sample_dotnet_console
     {
         public string Name { get; set; }
         public object Value { get; set; }
+    }
+
+    public static class HttpClientExtensions
+    {
+        public static async Task<HttpResponseMessage> PatchAsync(this HttpClient httpClient, string uri, JsonPatchDocument patchDocument)
+        {
+            HttpRequestMessage httpRequestMessage = new HttpRequestMessage(new HttpMethod("PATCH"), uri);
+            var serializedPatch = JsonConvert.SerializeObject(patchDocument);
+            httpRequestMessage.Content = new StringContent(serializedPatch, Encoding.Unicode, "application/json");
+            return await httpClient.SendAsync(httpRequestMessage);
+        }
     }
 }

@@ -1,8 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
+using Marvin.JsonPatch.Dynamic;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using opisense_sample_dotnet_console.Model;
 
 namespace opisense_sample_dotnet_console
@@ -30,24 +33,103 @@ namespace opisense_sample_dotnet_console
             var json = File.ReadAllText(fileName);
             try
             {
-                var sites = JsonConvert.DeserializeObject<List<ImportSite>>(json);
                 using (var client = await authenticator.GetAuthenticatedClient())
                 {
-                    foreach (var importSite in sites)
+                    JArray array = JArray.Parse(json);
+                    foreach (var jtoken in array)
                     {
-                        var siteId = await DataCreator.CreateSite(client, importSite);
-                        Console.WriteLine($"Created site - id <{siteId}> named <{importSite.Name}>");
-                        foreach (var importSource in importSite.Sources)
-                        {
-                            var source = JsonConvert.DeserializeObject<ImportSourceWithSiteId>(JsonConvert.SerializeObject(importSource));
-                            source.SiteId = siteId;
-                            var sourceId = (await DataCreator.CreateSource(client, source)).Id;
-                            Console.WriteLine($"Created source - id <{sourceId}> named <{importSource.Name}> in site <{importSite.Name}>");
+                        var importSite = jtoken.ToObject<ImportSite>();
 
-                            foreach (var importVariable in importSource.Variables)
+                        if (importSite.Id.HasValue)
+                        {
+                            var sitePatch = new JsonPatchDocument();
+                            WalkNode(jtoken, "", (n, path) =>
                             {
-                                var variable = await DataCreator.CreateVariable(client, sourceId, importVariable);
-                                Console.WriteLine($"Created variable - id <{variable.Id}> of type <{importVariable.VariableTypeId}> source <{importSource.Name}> in site <{importSite.Name}>");
+                                foreach (var property in n.Properties())
+                                {
+                                    if (property.Value.Type != JTokenType.Array && property.Value.Type != JTokenType.Object && property.Value.Type != JTokenType.Property
+                                        && !string.Equals(property.Name, nameof(ImportSite.Id), StringComparison.InvariantCultureIgnoreCase))
+                                    {
+                                        sitePatch.Replace($"{path}{property.Name}", property.ToObject(GetPropertyType(property.Value.Type)));
+                                    }
+                                }
+
+                            });
+                            await DataCreator.PatchSite(client, importSite.Id.Value, sitePatch);
+                            Console.WriteLine($"Updated site - id <{importSite.Id}> named <{importSite.Name}>");
+                        }
+                        else
+                        {
+                            importSite.Id = await DataCreator.CreateSite(client, importSite);
+                            Console.WriteLine($"Created site - id <{importSite.Id}> named <{importSite.Name}>");
+                        }
+                        var sources = jtoken[nameof(ImportSite.Sources)];
+                        if (sources != null)
+                        {
+                            var sourceArray = sources.ToObject<JArray>();
+                            foreach (var sourceToken in sourceArray)
+                            {
+                                var importSource = sourceToken.ToObject<ImportSource>();
+
+                                var source = JsonConvert.DeserializeObject<ImportSourceWithSiteId>(JsonConvert.SerializeObject(importSource));
+                                source.SiteId = importSite.Id.Value;
+                                if (importSource.Id.HasValue)
+                                {
+                                    var sourcePatch = new JsonPatchDocument();
+                                    WalkNode(sourceToken, "", (n, path) =>
+                                    {
+                                        foreach (var property in n.Properties())
+                                        {
+                                            if (property.Value.Type != JTokenType.Array && property.Value.Type != JTokenType.Object && property.Value.Type != JTokenType.Property
+                                                && !string.Equals(property.Name, nameof(ImportSource.Id), StringComparison.InvariantCultureIgnoreCase))
+                                            {
+                                                sourcePatch.Replace($"{path}{property.Name}", property.ToObject(GetPropertyType(property.Value.Type)));
+                                            }
+                                        }
+
+                                    });
+                                    await DataCreator.PatchSource(client, source.Id.Value, sourcePatch);
+                                    Console.WriteLine($"Updated source - id <{source.Id}> named <{source.Name}> in site <{importSite.Name}>");
+                                }
+                                else
+                                {
+                                    source.Id = (await DataCreator.CreateSource(client, source)).Id;
+                                    Console.WriteLine($"Created source - id <{source.Id}> named <{source.Name}> in site <{importSite.Name}>");
+                                }
+
+                                var variables = sourceToken[nameof(ImportSource.Variables)];
+                                if (variables != null)
+                                {
+                                    var variableArray = variables.ToObject<JArray>();
+                                    foreach (var variableToken in variableArray)
+                                    {
+                                        var importVariable = variableToken.ToObject<VariableImport>();
+
+                                        if (importVariable.Id.HasValue)
+                                        {
+                                            var variablePatch = new JsonPatchDocument();
+                                            WalkNode(variableToken, "", (n, path) =>
+                                            {
+                                                foreach (var property in n.Properties())
+                                                {
+                                                    if (property.Value.Type != JTokenType.Array && property.Value.Type != JTokenType.Object && property.Value.Type != JTokenType.Property
+                                                        && !string.Equals(property.Name, nameof(VariableImport.Id), StringComparison.InvariantCultureIgnoreCase))
+                                                    {
+                                                        variablePatch.Replace($"{path}{property.Name}", property.ToObject(GetPropertyType(property.Value.Type)));
+                                                    }
+                                                }
+
+                                            });
+                                            await DataCreator.PatchVariable(client, source.Id.Value, importVariable.Id.Value, variablePatch);
+                                            Console.WriteLine($"update variable - id <{importVariable.Id}> of type <{importVariable.VariableTypeId}> source <{importSource.Name}> in site <{importSite.Name}>");
+                                        }
+                                        else
+                                        {
+                                            var variable = await DataCreator.CreateVariable(client, source.Id.Value, importVariable);
+                                            Console.WriteLine($"Created variable - id <{variable.Id}> of type <{importVariable.VariableTypeId}> source <{importSource.Name}> in site <{importSite.Name}>");
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -115,12 +197,72 @@ namespace opisense_sample_dotnet_console
             }
 
         }
+
+        private Type GetPropertyType(JTokenType propertyType)
+        {
+            switch (propertyType)
+            {
+                case JTokenType.Integer:
+                    return typeof(int);
+                case JTokenType.Float:
+                    return typeof(double);
+                case JTokenType.Uri:
+                case JTokenType.String:
+                case JTokenType.Null:
+                case JTokenType.Undefined:
+                    return typeof(string);
+                case JTokenType.Boolean:
+                    return typeof(bool);
+                case JTokenType.Date:
+                    return typeof(DateTime);
+                case JTokenType.Raw:
+                case JTokenType.Bytes:
+                    return typeof(byte[]);
+                case JTokenType.Guid:
+                    return typeof(Guid);
+                case JTokenType.TimeSpan:
+                    return typeof(TimeSpan);
+                default:
+                    return typeof(string);
+            }
+        }
+
+        static void WalkNode(JToken node, string path, Action<JObject, string> action)
+        {
+            if (node.Type == JTokenType.Object)
+            {
+                action((JObject)node, path);
+
+                foreach (JProperty child in node.Children<JProperty>())
+                {
+                    var subPath = $"{path}{child.Name}/";
+                    if (subPath.Contains(nameof(ImportSite.ClientData)))
+                    {
+                        WalkNode(child.Value, subPath, action);
+                    }
+                }
+            }
+            else if (node.Type == JTokenType.Array)
+            {
+                var children = node.Children().ToList();
+                for (int i = 0; i < children.Count; i++)
+                {
+                    WalkNode(children[i], $"{path}[{i}]/", action);
+                }
+            }
+        }
     }
+
+    //internal class DynamicAndCaseInsensitivePropertyPathResolver : CaseInsensitivePropertyPathResolver
+    //{
+    //    override 
+    //}
 
     public class ImportSite
     {
+        public int? Id { get; set; }
         public string Name { get; set; }
-        public int TypeId { get; set; }
+        public int? TypeId { get; set; }
         public string Street { get; set; }
         public string PostalCode { get; set; }
         public string City { get; set; }
@@ -133,6 +275,7 @@ namespace opisense_sample_dotnet_console
 
     public class ImportSource
     {
+        public int? Id { get; set; }
         public int EnergyTypeId { get; set; }
         public int? EnergyUsageId { get; set; }
         public string Name { get; set; }
@@ -151,6 +294,7 @@ namespace opisense_sample_dotnet_console
 
     public class VariableImport
     {
+        public int? Id { get; set; }
         public int VariableTypeId { get; set; }
         public int UnitId { get; set; }
         public int Divider { get; set; }
