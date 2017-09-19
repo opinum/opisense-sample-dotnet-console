@@ -5,3 +5,5 @@ obj
 \packages
 appSettings.config
 *.user
+
+/.vs
