@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Marvin.JsonPatch.Dynamic;
 using Newtonsoft.Json;
@@ -19,18 +20,10 @@ namespace opisense_sample_dotnet_console
             this.authenticator = authenticator;
         }
 
-        public async Task ImportDefinitions()
+        public async Task ImportSites()
         {
-            Console.WriteLine("Please enter the .json file containing the sites and sources");
-            var fileName = Console.ReadLine();
-
-            if (!File.Exists(fileName))
-            {
-                Console.WriteLine($"Could not open the file <{fileName}>");
-                return;
-            }
-            Console.WriteLine($"Opening file {fileName}");
-            var json = File.ReadAllText(fileName);
+            var json = LoadFile();
+            if (json == null) return;
             try
             {
                 using (var client = await authenticator.GetAuthenticatedClient())
@@ -66,78 +59,14 @@ namespace opisense_sample_dotnet_console
                         var sources = jtoken[nameof(ImportSite.Sources)];
                         if (sources != null)
                         {
-                            var sourceArray = sources.ToObject<JArray>();
-                            foreach (var sourceToken in sourceArray)
-                            {
-                                var importSource = sourceToken.ToObject<ImportSource>();
-
-                                var source = JsonConvert.DeserializeObject<ImportSourceWithSiteId>(JsonConvert.SerializeObject(importSource));
-                                source.SiteId = importSite.Id.Value;
-                                if (importSource.Id.HasValue)
-                                {
-                                    var sourcePatch = new JsonPatchDocument();
-                                    WalkNode(sourceToken, "", (n, path) =>
-                                    {
-                                        foreach (var property in n.Properties())
-                                        {
-                                            if (property.Value.Type != JTokenType.Array && property.Value.Type != JTokenType.Object && property.Value.Type != JTokenType.Property
-                                                && !string.Equals(property.Name, nameof(ImportSource.Id), StringComparison.InvariantCultureIgnoreCase))
-                                            {
-                                                sourcePatch.Replace($"{path}{property.Name}", property.ToObject(GetPropertyType(property.Value.Type)));
-                                            }
-                                        }
-
-                                    });
-                                    await DataCreator.PatchSource(client, source.Id.Value, sourcePatch);
-                                    Console.WriteLine($"Updated source - id <{source.Id}> named <{source.Name}> in site <{importSite.Name}>");
-                                }
-                                else
-                                {
-                                    source.Id = (await DataCreator.CreateSource(client, source)).Id;
-                                    Console.WriteLine($"Created source - id <{source.Id}> named <{source.Name}> in site <{importSite.Name}>");
-                                }
-
-                                var variables = sourceToken[nameof(ImportSource.Variables)];
-                                if (variables != null)
-                                {
-                                    var variableArray = variables.ToObject<JArray>();
-                                    foreach (var variableToken in variableArray)
-                                    {
-                                        var importVariable = variableToken.ToObject<VariableImport>();
-
-                                        if (importVariable.Id.HasValue)
-                                        {
-                                            var variablePatch = new JsonPatchDocument();
-                                            WalkNode(variableToken, "", (n, path) =>
-                                            {
-                                                foreach (var property in n.Properties())
-                                                {
-                                                    if (property.Value.Type != JTokenType.Array && property.Value.Type != JTokenType.Object && property.Value.Type != JTokenType.Property
-                                                        && !string.Equals(property.Name, nameof(VariableImport.Id), StringComparison.InvariantCultureIgnoreCase))
-                                                    {
-                                                        variablePatch.Replace($"{path}{property.Name}", property.ToObject(GetPropertyType(property.Value.Type)));
-                                                    }
-                                                }
-
-                                            });
-                                            await DataCreator.PatchVariable(client, source.Id.Value, importVariable.Id.Value, variablePatch);
-                                            Console.WriteLine($"update variable - id <{importVariable.Id}> of type <{importVariable.VariableTypeId}> source <{importSource.Name}> in site <{importSite.Name}>");
-                                        }
-                                        else
-                                        {
-                                            var variable = await DataCreator.CreateVariable(client, source.Id.Value, importVariable);
-                                            Console.WriteLine($"Created variable - id <{variable.Id}> of type <{importVariable.VariableTypeId}> source <{importSource.Name}> in site <{importSite.Name}>");
-                                        }
-                                    }
-                                }
-                            }
+                            await ImportSources(client, sources, importSite.Id);
                         }
                     }
                 }
             }
             catch (Exception e)
             {
-                Console.WriteLine($"Failed to deserialize the file <{fileName}>");
+                Console.WriteLine($"Failed to deserialize the file");
                 Console.WriteLine($"Please addapt your file based on the following example");
                 var clientData = JsonConvert.DeserializeObject<dynamic>(@"
                         {
@@ -195,7 +124,163 @@ namespace opisense_sample_dotnet_console
                 };
                 Console.WriteLine(JsonConvert.SerializeObject(new[] { sampleSite }, Formatting.Indented));
             }
+        }
 
+        public async Task ImportSources()
+        {
+            var json = LoadFile();
+            if (json == null) return;
+
+            try
+            {
+                using (var client = await authenticator.GetAuthenticatedClient())
+                {
+                    JArray array = JArray.Parse(json);
+                    await ImportSources(client, array);
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Failed to deserialize the file");
+                Console.WriteLine($"Please addapt your file based on the following example");
+                ImportSource sampleSite =
+                        new ImportSource
+                        {
+                            Id = 12345,
+                            Name = "My Source",
+                            Description = "Source description",
+                            SourceTypeId = 72,
+                            TimeZoneId = "Romance Standard Time",
+                            EnergyTypeId = 1,
+                            Variables = new List<VariableImport>
+                            {
+                                new VariableImport
+                                {
+                                    VariableTypeId = 0,
+                                    UnitId = 8,
+                                    Divider = 1,
+                                    Granularity = 10,
+                                    GranularityTimeBase = TimePeriod.Minute
+                                },
+                                new VariableImport
+                                {
+                                    VariableTypeId = 25,
+                                    UnitId = 8,
+                                    Divider = 1,
+                                    Granularity = 10,
+                                    GranularityTimeBase = TimePeriod.Minute
+                                }
+
+                            }
+                        };
+                Console.WriteLine(JsonConvert.SerializeObject(new[] { sampleSite }, Formatting.Indented));
+            }
+        }
+
+        private async Task ImportSources(HttpClient client, JToken sources, int? siteId = null)
+        {
+            var sourceArray = sources.ToObject<JArray>();
+            foreach (var sourceToken in sourceArray)
+            {
+                var source = sourceToken.ToObject<ImportSource>();
+
+                if (source.Id.HasValue)
+                {
+                    var sourcePatch = new JsonPatchDocument();
+                    WalkNode(sourceToken, "", (n, path) =>
+                    {
+                        foreach (var property in n.Properties())
+                        {
+                            if (property.Value.Type != JTokenType.Array && property.Value.Type != JTokenType.Object && property.Value.Type != JTokenType.Property
+                                && !string.Equals(property.Name, nameof(ImportSource.Id), StringComparison.InvariantCultureIgnoreCase))
+                            {
+                                sourcePatch.Replace($"{path}{property.Name}", property.ToObject(GetPropertyType(property.Value.Type)));
+                            }
+                        }
+                    });
+                    await DataCreator.PatchSource(client, source.Id.Value, sourcePatch);
+                    Console.WriteLine($"Updated source - id <{source.Id}> named <{source.Name}>");
+                }
+                else
+                {
+                    if (siteId.HasValue)
+                    {
+                        source.SiteId = siteId.Value;
+                    }
+                    source.Id = (await DataCreator.CreateSource(client, source)).Id;
+                    Console.WriteLine($"Created source - id <{source.Id}> named <{source.Name}> in site <{source.SiteId}>");
+                }
+                await ImportVariables(sourceToken, client, source);
+            }
+        }
+
+        private async Task ImportVariables(JToken sourceToken, HttpClient client, ImportSource source)
+        {
+            var variables = sourceToken[nameof(ImportSource.Variables)];
+            if (variables != null)
+            {
+                var variableArray = variables.ToObject<JArray>();
+                foreach (var variableToken in variableArray)
+                {
+                    var importVariable = variableToken.ToObject<VariableImport>();
+
+                    if (importVariable.Id.HasValue)
+                    {
+                        var variablePatch = new JsonPatchDocument();
+                        WalkNode(variableToken, "", (n, path) =>
+                        {
+                            foreach (var property in n.Properties())
+                            {
+                                if (property.Value.Type != JTokenType.Array && property.Value.Type != JTokenType.Object && property.Value.Type != JTokenType.Property
+                                    && !string.Equals(property.Name, nameof(VariableImport.Id), StringComparison.InvariantCultureIgnoreCase))
+                                {
+                                    variablePatch.Replace($"{path}{property.Name}", property.ToObject(GetPropertyType(property.Value.Type)));
+                                }
+                            }
+                        });
+                        await DataCreator.PatchVariable(client, source.Id.Value, importVariable.Id.Value, variablePatch);
+                        Console.WriteLine($"update variable - id <{importVariable.Id}> of type <{importVariable.VariableTypeId}> source <{source.Name}>");
+                    }
+                    else
+                    {
+                        var variable = await DataCreator.CreateVariable(client, source.Id.Value, importVariable);
+                        Console.WriteLine($"Created variable - id <{variable.Id}> of type <{importVariable.VariableTypeId}> source <{source.Name}>");
+                    }
+                }
+            }
+        }
+
+        private static string LoadFile()
+        {
+            do
+            {
+                try
+                {
+                    Console.WriteLine("Please enter the .json file containing the sites and sources");
+                    var readLine = Console.ReadLine();
+                    var fileName = readLine.Trim().Trim('"');
+
+                    if (!File.Exists(fileName))
+                    {
+                        Console.WriteLine($"Could not open the file <{fileName}>");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Opening file {fileName}");
+                        var json = File.ReadAllText(fileName);
+                        return json;
+
+                    }
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e.ToString());
+                    Console.WriteLine();
+                    Console.WriteLine($"FAILED to open file, please retry...");
+                    Console.WriteLine();
+                }
+
+            } while (true);
         }
 
         private Type GetPropertyType(JTokenType propertyType)
@@ -275,6 +360,7 @@ namespace opisense_sample_dotnet_console
 
     public class ImportSource
     {
+        public int? SiteId { get; set; }
         public int? Id { get; set; }
         public int EnergyTypeId { get; set; }
         public int? EnergyUsageId { get; set; }
@@ -300,10 +386,5 @@ namespace opisense_sample_dotnet_console
         public int Divider { get; set; }
         public double Granularity { get; set; }
         public TimePeriod GranularityTimeBase { get; set; }
-    }
-
-    public class ImportSourceWithSiteId : ImportSource
-    {
-        public int SiteId { get; set; }
     }
 }

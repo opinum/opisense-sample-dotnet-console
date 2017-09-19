@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using opisense_sample_dotnet_console.Model;
 
 namespace opisense_sample_dotnet_console
 {
@@ -45,9 +43,12 @@ namespace opisense_sample_dotnet_console
                             sourceDeletor.DeleteSource().Wait();
                             break;
                         case 7:
-                            importer.ImportDefinitions().Wait();
+                            importer.ImportSites().Wait();
                             break;
                         case 8:
+                            importer.ImportSources().Wait();
+                            break;
+                        case 9:
                             sourceSelector.SearchSources().Wait();
                             break;
                     }
@@ -76,7 +77,8 @@ namespace opisense_sample_dotnet_console
             Console.WriteLine("5. Delete a site (WARNING: UNRECOVERABLE)");
             Console.WriteLine("6. Delete a source (WARNING: UNRECOVERABLE)");
             Console.WriteLine("7. Import sites and sources (using JSON File)");
-            Console.WriteLine("8. Search sources (using Custom filter)");
+            Console.WriteLine("8. Import sources (using JSON File)");
+            Console.WriteLine("9. Search sources (using Custom filter)");
 
             Console.WriteLine();
             Console.WriteLine("-------------------------");
