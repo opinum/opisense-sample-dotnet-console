@@ -375,6 +375,7 @@ namespace opisense_sample_dotnet_console
         public string SerialNumber { get; set; }
         public int? DisplayVariableTypeId { get; set; }
         public string MeterAddress { get; set; }
+        public dynamic ClientData { get; set; }
         public List<VariableImport> Variables { get; set; } = new List<VariableImport>();
     }
 
