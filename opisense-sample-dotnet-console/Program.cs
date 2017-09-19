@@ -15,6 +15,8 @@ namespace opisense_sample_dotnet_console
             var siteDeletor = new SiteDeletor(siteSelector, authenticator);
             var sourceDeletor = new SourceDeletor(sourceSelector, authenticator);
             var importer = new Importer(authenticator);
+            var storageLoader = new StorageLoader(authenticator);
+
             var exitCode = 99;
             int userInput;
             do
@@ -51,6 +53,9 @@ namespace opisense_sample_dotnet_console
                         case 9:
                             sourceSelector.SearchSources().Wait();
                             break;
+                        case 10:
+                            storageLoader.LoadFileFromString("test_upload_console.txt", "This is a simple test").Wait();
+                            break;
                     }
                 }
                 catch (Exception exc)
@@ -79,6 +84,7 @@ namespace opisense_sample_dotnet_console
             Console.WriteLine("7. Import sites and sources (using JSON File)");
             Console.WriteLine("8. Import sources (using JSON File)");
             Console.WriteLine("9. Search sources (using Custom filter)");
+            Console.WriteLine("10. Upload sample file to storage API");
 
             Console.WriteLine();
             Console.WriteLine("-------------------------");
@@ -87,6 +93,4 @@ namespace opisense_sample_dotnet_console
             return Convert.ToInt32(result);
         }
     }
-
-  
 }

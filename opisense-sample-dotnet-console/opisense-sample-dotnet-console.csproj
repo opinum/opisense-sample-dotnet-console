@@ -76,6 +76,7 @@
     <Compile Include="SiteSelector.cs" />
     <Compile Include="SourceDeletor.cs" />
     <Compile Include="SourceSelector.cs" />
+    <Compile Include="StorageLoader.cs" />
     <Compile Include="Tools\ConsoleTable.cs" />
     <Compile Include="VariableSelector.cs" />
   </ItemGroup>
