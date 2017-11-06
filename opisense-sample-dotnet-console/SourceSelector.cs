@@ -47,6 +47,12 @@ namespace opisense_sample_dotnet_console
             response.EnsureSuccessStatusCode();
             return await response.Content.ReadAsAsync<Source[]>();
         }
+        private static async Task<Source[]> GetSourcesByName(HttpClient client, string name)
+        {
+            var response = await client.GetAsync($"{OpisenseApi}sources?displayLevel=verbose&customFilter={HttpUtility.UrlEncode($"Name like '{name}'")}");
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadAsAsync<Source[]>();
+        }
 
         private async Task<Source[]> InternalDisplaySource(HttpClient client, bool fromSite = false)
         {

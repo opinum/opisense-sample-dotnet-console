@@ -212,7 +212,6 @@ namespace opisense_sample_dotnet_console
             {
                 VariableTypeId = variableTypeId,
                 UnitId = 8,
-                Divider = 1,
                 Granularity = 10,
                 GranularityTimeBase = TimePeriod.Minute
             });

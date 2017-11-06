@@ -17,6 +17,7 @@ namespace opisense_sample_dotnet_console
                 var sourceDeletor = new SourceDeletor(sourceSelector, authenticator);
                 var importer = new Importer(authenticator);
                 var storageLoader = new StorageLoader(authenticator);
+                var calculatedVariableManager = new CalculatedVariableManager(authenticator, sourceSelector);
 
                 var exitCode = 99;
                 int userInput;
@@ -60,6 +61,9 @@ namespace opisense_sample_dotnet_console
                             case 11:
                                 authenticator.RefreshToken().Wait();
                                 break;
+                            case 12:
+                                calculatedVariableManager.CrudCalculatedVariables().Wait();
+                                break;
                         }
                     }
                     catch (Exception exc)
@@ -92,6 +96,7 @@ namespace opisense_sample_dotnet_console
             Console.WriteLine("9. Search sources (using Custom filter)");
             Console.WriteLine("10. Upload sample file to storage API");
             Console.WriteLine("11. Refresh access token");
+            Console.WriteLine("12. CRUD calculated variables");
 
             Console.WriteLine();
             Console.WriteLine("-------------------------");
