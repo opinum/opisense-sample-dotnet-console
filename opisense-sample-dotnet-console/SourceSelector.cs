@@ -20,32 +20,24 @@ namespace opisense_sample_dotnet_console
             this.authenticator = authenticator;
         }
 
-        public async Task<Source[]> DisplaySources(bool fromSite = false, HttpClient client = null)
+        public async Task<Source[]> DisplaySources(bool fromSite = false)
         {
-            if (client == null)
-            {
-                using (client = await authenticator.GetAuthenticatedClient())
-                {
-                    return await InternalDisplaySource(client, fromSite);
-                }
-            }
+            var client = await authenticator.GetAuthenticatedClient();
             return await InternalDisplaySource(client, fromSite);
         }
 
         public async Task SearchSources()
         {
-            using (var client = await authenticator.GetAuthenticatedClient())
-            {
-                Console.WriteLine("Enter the your custom filter (i.e. Name = 'source1' OR SOURCE_FORM.Group1.'STRING_FIELD' = 'source2'): ");
-                var filter = Console.ReadLine();
-                var response = await client.GetAsync($"{OpisenseApi}sources?displayLevel=verbose&customFilter={HttpUtility.UrlEncode(filter)}");
-                response.EnsureSuccessStatusCode();
-                var sources = await response.Content.ReadAsAsync<Source[]>();
+            var client = await authenticator.GetAuthenticatedClient();
+            Console.WriteLine("Enter the your custom filter (i.e. Name = 'source1' OR SOURCE_FORM.Group1.'STRING_FIELD' = 'source2'): ");
+            var filter = Console.ReadLine();
+            var response = await client.GetAsync($"{OpisenseApi}sources?displayLevel=verbose&customFilter={HttpUtility.UrlEncode(filter)}");
+            response.EnsureSuccessStatusCode();
+            var sources = await response.Content.ReadAsAsync<Source[]>();
 
-                ConsoleTable
-                    .From(sources)
-                    .Write();
-            }
+            ConsoleTable
+                .From(sources)
+                .Write();
         }
 
         private static async Task<Source[]> GetSources(HttpClient client, int? siteId)

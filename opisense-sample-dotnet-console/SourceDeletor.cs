@@ -23,44 +23,42 @@ namespace opisense_sample_dotnet_console
 
         public async Task DeleteSource()
         {
-            using (var client = await authenticator.GetAuthenticatedClient())
+            var client = await authenticator.GetAuthenticatedClient();
+            var sources = await sourceSelector.DisplaySources(true);
+
+            Console.WriteLine();
+            Console.WriteLine();
+            Console.WriteLine("Enter the Id of the source you want to delete: ");
+
+            var sourceId = Convert.ToInt32(Console.ReadLine());
+            var source = sources.Single(x => x.Id == sourceId);
+
+            Console.WriteLine("Chosen source: ");
+            ConsoleTable
+                .From(new List<Source> { source })
+                .Write();
+
+            Console.WriteLine();
+            Console.WriteLine();
+            Console.WriteLine("Are you sure you want to delete this source?");
+            Console.WriteLine();
+            Console.WriteLine();
+            Console.WriteLine("Type YES if you confirm:");
+            var response = Console.ReadLine();
+
+            if (response != null && response.Equals("YES", StringComparison.InvariantCultureIgnoreCase))
             {
-                var sources = await sourceSelector.DisplaySources(true);
-
                 Console.WriteLine();
-                Console.WriteLine();
-                Console.WriteLine("Enter the Id of the source you want to delete: ");
-
-                var sourceId = Convert.ToInt32(Console.ReadLine());
-                var source = sources.Single(x => x.Id == sourceId);
-
-                Console.WriteLine("Chosen source: ");
-                ConsoleTable
-                    .From(new List<Source> {source})
-                    .Write();
-
-                Console.WriteLine();
-                Console.WriteLine();
-                Console.WriteLine("Are you sure you want to delete this source?");
-                Console.WriteLine();
-                Console.WriteLine();
-                Console.WriteLine("Type YES if you confirm:");
-                var response = Console.ReadLine();
-                
-                if (response != null && response.Equals("YES", StringComparison.InvariantCultureIgnoreCase))
+                Console.WriteLine("WARNING: This action cannot be undone, please enter the Source Id to validate:");
+                var confirmId = Convert.ToInt32(Console.ReadLine());
+                if (confirmId == sourceId)
                 {
-                    Console.WriteLine();
-                    Console.WriteLine("WARNING: This action cannot be undone, please enter the Source Id to validate:");
-                    var confirmId = Convert.ToInt32(Console.ReadLine());
-                    if (confirmId == sourceId)
-                    {
-                        await InternalDeleteSource(client, sourceId);
+                    await InternalDeleteSource(client, sourceId);
 
-                    }
-                    else
-                    {
-                        Console.WriteLine("The source id you typed is different. Abording the request.");
-                    }
+                }
+                else
+                {
+                    Console.WriteLine("The source id you typed is different. Abording the request.");
                 }
             }
         }

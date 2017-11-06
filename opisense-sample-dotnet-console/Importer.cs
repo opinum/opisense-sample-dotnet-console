@@ -26,41 +26,39 @@ namespace opisense_sample_dotnet_console
             if (json == null) return;
             try
             {
-                using (var client = await authenticator.GetAuthenticatedClient())
+                var client = await authenticator.GetAuthenticatedClient();
+                JArray array = JArray.Parse(json);
+                foreach (var jtoken in array)
                 {
-                    JArray array = JArray.Parse(json);
-                    foreach (var jtoken in array)
+                    var importSite = jtoken.ToObject<ImportSite>();
+
+                    if (importSite.Id.HasValue)
                     {
-                        var importSite = jtoken.ToObject<ImportSite>();
-
-                        if (importSite.Id.HasValue)
+                        var sitePatch = new JsonPatchDocument();
+                        WalkNode(jtoken, "", (n, path) =>
                         {
-                            var sitePatch = new JsonPatchDocument();
-                            WalkNode(jtoken, "", (n, path) =>
+                            foreach (var property in n.Properties())
                             {
-                                foreach (var property in n.Properties())
+                                if (property.Value.Type != JTokenType.Array && property.Value.Type != JTokenType.Object && property.Value.Type != JTokenType.Property
+                                    && !string.Equals(property.Name, nameof(ImportSite.Id), StringComparison.InvariantCultureIgnoreCase))
                                 {
-                                    if (property.Value.Type != JTokenType.Array && property.Value.Type != JTokenType.Object && property.Value.Type != JTokenType.Property
-                                        && !string.Equals(property.Name, nameof(ImportSite.Id), StringComparison.InvariantCultureIgnoreCase))
-                                    {
-                                        sitePatch.Replace($"{path}{property.Name}", property.ToObject(GetPropertyType(property.Value.Type)));
-                                    }
+                                    sitePatch.Replace($"{path}{property.Name}", property.ToObject(GetPropertyType(property.Value.Type)));
                                 }
+                            }
 
-                            });
-                            await DataCreator.PatchSite(client, importSite.Id.Value, sitePatch);
-                            Console.WriteLine($"Updated site - id <{importSite.Id}> named <{importSite.Name}>");
-                        }
-                        else
-                        {
-                            importSite.Id = await DataCreator.CreateSite(client, importSite);
-                            Console.WriteLine($"Created site - id <{importSite.Id}> named <{importSite.Name}>");
-                        }
-                        var sources = jtoken[nameof(ImportSite.Sources)];
-                        if (sources != null)
-                        {
-                            await ImportSources(client, sources, importSite.Id);
-                        }
+                        });
+                        await DataCreator.PatchSite(client, importSite.Id.Value, sitePatch);
+                        Console.WriteLine($"Updated site - id <{importSite.Id}> named <{importSite.Name}>");
+                    }
+                    else
+                    {
+                        importSite.Id = await DataCreator.CreateSite(client, importSite);
+                        Console.WriteLine($"Created site - id <{importSite.Id}> named <{importSite.Name}>");
+                    }
+                    var sources = jtoken[nameof(ImportSite.Sources)];
+                    if (sources != null)
+                    {
+                        await ImportSources(client, sources, importSite.Id);
                     }
                 }
             }
@@ -133,11 +131,9 @@ namespace opisense_sample_dotnet_console
 
             try
             {
-                using (var client = await authenticator.GetAuthenticatedClient())
-                {
-                    JArray array = JArray.Parse(json);
-                    await ImportSources(client, array);
-                }
+                var client = await authenticator.GetAuthenticatedClient();
+                JArray array = JArray.Parse(json);
+                await ImportSources(client, array);
             }
             catch (Exception e)
             {
