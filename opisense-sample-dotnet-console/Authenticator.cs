@@ -45,6 +45,7 @@ namespace opisense_sample_dotnet_console
                 var bearerToken = await GetBearerToken();
                 client = new HttpClient();
                 client.SetBearerToken(bearerToken);
+                client.DefaultRequestHeaders.Add("X-Opisense-Api-Version", "1.0");
             }
             return client;
         }
