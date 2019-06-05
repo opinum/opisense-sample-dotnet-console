@@ -383,5 +383,8 @@ namespace opisense_sample_dotnet_console
         public int Divider { get; set; }
         public double Granularity { get; set; }
         public TimePeriod GranularityTimeBase { get; set; }
+        public string MappingConfig { get; set; }
+        public QuantityType QuantityType { get; set; }
+        public string Name { get; set; }
     }
 }
