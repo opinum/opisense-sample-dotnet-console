@@ -9,8 +9,8 @@ A simple Opisense API Client in a .Net C# Console
   <?xml version="1.0" encoding="utf-8"?>
   <appSettings>
     <add key="OpisenseApi" value="https://api.opinum.com/"/>
-    <add key="OpisenseIdentity" value="http://identity.opinum.com/"/>
-    <add key="OpisensePush" value="http://push.opinum.com/api/"/>
+    <add key="OpisenseIdentity" value="https://identity.opinum.com/"/>
+    <add key="OpisensePush" value="https://push.opinum.com/api/"/>
     <add key="OpisenseUsername" value="[YOUR USERNAME]"/>
     <add key="OpisensePassword" value="[PASSWORD OF THE USER]"/>
     <add key="OpisenseClientId" value="[CLIENT ID]"/>
