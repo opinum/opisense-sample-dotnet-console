@@ -358,6 +358,7 @@ namespace opisense_sample_dotnet_console
     {
         public int? SiteId { get; set; }
         public int? Id { get; set; }
+        public int? GatewayId { get; set; }
         public int EnergyTypeId { get; set; }
         public int? EnergyUsageId { get; set; }
         public string Name { get; set; }
